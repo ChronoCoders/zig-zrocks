@@ -50,6 +50,21 @@ pub fn build(b: *std.Build) void {
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run the zrocks test suite");
     test_step.dependOn(&run_tests.step);
+
+    const example = b.addExecutable(.{
+        .name = "zrocks-example",
+        .root_source_file = b.path("example/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    example.root_module.addImport("zrocks", module);
+    if (link_vendor) |s| example.step.dependOn(s);
+    const example_step = b.step("example", "Build the usage example");
+    example_step.dependOn(&example.step);
+
+    const run_example = b.addRunArtifact(example);
+    const run_example_step = b.step("run-example", "Build and run the usage example");
+    run_example_step.dependOn(&run_example.step);
 }
 
 fn configureLink(b: *std.Build, module: *std.Build.Module, use_system: bool) void {
