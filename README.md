@@ -132,6 +132,8 @@ The suite in `src/rocksdb_test.zig` has 13 tests covering:
 
 All 13 tests pass in Debug, ReleaseSafe, and ReleaseFast.
 
+The usage example above is built as part of the suite so the README snippet stays verifiable. Compile it with `zig build example`, or compile and run it with `zig build run-example`.
+
 ## License
 
 MIT License.
