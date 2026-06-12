@@ -26,6 +26,46 @@ zig build test
 
 By default zrocks builds and links the vendored RocksDB. If `rocksdb/c.h` and a `librocksdb` are present in standard system locations they are detected and used automatically. Pass `-Dsystem-rocksdb=true` to force system linking, or `-Dsystem-rocksdb=false` to force the vendored build.
 
+## Usage
+
+```zig
+const std = @import("std");
+const rocks = @import("zrocks");
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const db = try rocks.DB.open(allocator, "/tmp/zrocks-demo", .{
+        .create_if_missing = true,
+        .compression = .zstd,
+        .write_buffer_size = 64 * 1024 * 1024,
+    });
+    defer db.close();
+
+    try db.put("user:1", "alice");
+    try db.put("user:2", "bob");
+
+    if (try db.get(allocator, "user:1")) |value| {
+        defer allocator.free(value);
+        std.debug.print("user:1 = {s}\n", .{value});
+    }
+
+    var it = try db.iterator();
+    defer it.deinit();
+
+    it.seek("user:");
+    while (it.valid()) : (it.next()) {
+        if (!std.mem.startsWith(u8, it.key(), "user:")) break;
+        std.debug.print("{s} -> {s}\n", .{ it.key(), it.value() });
+    }
+    try it.status();
+}
+```
+
+Values returned by `get` are owned by the allocator you pass in and must be freed. Iterator `key` and `value` slices are borrowed and remain valid only until the next iterator movement.
+
 ## API
 
 All public entry points are in `src/rocksdb.zig`.
